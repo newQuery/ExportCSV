@@ -1,9 +1,10 @@
 <?php
 // re Test
+error_reporting(E_ALL);
 require 'class.CSV.php';
 try
 {
-    $dbh = new PDO('mysql:host=localhost;dbname=chatbox', 'root', '');
+    $dbh = new PDO('mysql:host=localhost;dbname=random', 'root', 'root');
 }
 catch (PDOException $e)
 {
@@ -11,4 +12,8 @@ catch (PDOException $e)
     die();
 }
 
-$csv = new CSV($dbh, array('table' => 'mybb_usergroups','name' => 'export_mybb_usegroups', 'database' => 'chatbox', 'directory' => 'csv', 'download' => 1));
+$PDOStatement = $dbh -> prepare("SELECT * FROM messages");
+
+
+$csv = new CSV($PDOStatement);
+#$csv -> download();

@@ -5,83 +5,78 @@
  */
 class CSV
 {
+
+    private $directory = "csv";
+    private $name = "default_name";
     /**
      * @param $db PDO Database connection
      * @param $options Array containing key => value for ['table', 'database', 'name', 'directory']
      */
-    public function __construct($db, $options)
+    public function __construct($PDOStatement)
     {
-        if(!isset($options['table'])) throw new Exception("'table' missing in the options array", 1);
-        if(!isset($options['database'])) throw new Exception("'database' missing in the options array", 1);
-        if(!isset($options['name'])) throw new Exception("'name' missing in the options array", 1);
-        if(!isset($options['directory'])) $options['directory'] = '';
-        $this -> options = $options;
-        $this -> db = $db;
-        if(isset($this -> options['download']) AND $this -> options['download'] == 1) $this -> instantDownload();
-    }
 
-    public function instantDownload()
-    {
-        $this -> fetchResult();
-        $this -> setContent();
-        $this -> createCSV();
-        $this -> download();
-    }
+        $PDOStatement -> execute();
 
-    public function fetchResult()
-    {
-        $stmt = $this -> db -> prepare("SELECT * FROM ". $this -> options['table']);
-        $stmt -> execute();
-        $count = $stmt -> rowCount();
-        if($stmt -> rowCount() < 1)
+        $this -> columnCount = $PDOStatement -> columnCount();
+        $this -> count = $PDOStatement -> rowCount();
+        if($this -> count > 0)
         {
-            throw new Exception("Nothing to export in this table", 1);
-            die();
+            $this -> setColumnNames($PDOStatement);
+            $this -> results = $PDOStatement -> fetchAll(PDO::FETCH_OBJ);
+            $this -> setContent();
+            $this -> createCSV();
         }
-        $results = $stmt -> fetchAll(PDO::FETCH_OBJ);
-        $this -> results = $results;
+        else throw new Exception("Error with the PDOStatement", 1);
+    }
+
+    public function set($key, $value)
+    {
+        $this -> {$key} = $value;
         return $this;
     }
 
-    public function setContent()
+    private function setColumnNames($PDOStatement)
     {
-        $sql = "SELECT Column_name FROM Information_schema.columns where Table_schema = :database AND Table_name like :table";
-        $columns = $this -> db -> prepare($sql);
-        $columns -> bindValue(':database', $this -> options['database']);
-        $columns -> bindValue(':table', $this -> options['table']);
-        $columns -> execute();
-        if($columns -> rowCount() < 1)
+        $arrayNames = array();
+        foreach(range(0, $PDOStatement->columnCount() - 1) as $column_index)
         {
-            throw new Exception("Failled to set content, make sure you put the right options", 1);
-            die();
+          array_push($arrayNames,$PDOStatement->getColumnMeta($column_index)['name']);
         }
-        $columnNames = $columns -> fetchAll(PDO::FETCH_OBJ);
-        $names = array();
-        foreach ($columnNames as $c)
-        {
-            array_push($names, $c -> Column_name);
-        }
-        $this -> content[] = $names;
+        $this -> content[] = $arrayNames;
+    }
 
-        $count = count($names);
-
-        foreach ($this -> results as $value)
+    private function setContent()
+    {
+        #var_dump($this -> columnCount);
+        foreach ($this -> results as $result)
         {
             $values = array();
             $a = 0;
-            while ($a < $count)
+            while ($a <= $this -> count)
             {
-                array_push($values, $value -> {$names[$a]});
+                array_push($values, $result);
                 $a++;
             }
-            $this -> content[] = $values;
         }
-        return $this;
+        $this -> content[] = $values;
+        #var_dump($values);
     }
 
-    public function createCSV()
+    private function getCSVLocation()
     {
-        $this -> file = fopen($this -> options['directory'] .'/'. $this -> options['name'].'_'.date('Y_m_d').'.csv', 'w');
+        $txt = '';
+        if($this -> directory != '')
+        {
+            $txt .= $this -> directory .'/'.$this -> name.'_'.date('Y_m_d').'.csv';
+        }
+        else $txt .= $this -> name.'_'.date('Y_m_d').'.csv';
+
+        return $txt;
+    }
+
+    private function createCSV()
+    {
+        $this -> file = fopen('csv/'. $this -> name.'_'.date('Y_m_d').'.csv', 'w') or die('peut pas ouvrir sa mere');
         foreach ($this -> content as $fields) {
             fputcsv($this -> file, $fields);
         }
@@ -91,11 +86,11 @@ class CSV
 
     public function download()
     {
-        $file_url = 'http://'.$_SERVER['HTTP_HOST'].'/'.$this -> options['directory'] .'/'.$this -> options['name'].'_'.date('Y_m_d').'.csv';
+        $file_url = 'http://'.$_SERVER['HTTP_HOST'] .'/'. $this -> getCSVLocation();
         header('Content-Type: application/octet-stream');
         header("Content-Transfer-Encoding: Binary");
         header("Content-disposition: attachment; filename=\"" . basename($file_url) . "\"");
-        readfile($this -> options['directory'] .'/'.$this -> options['name'].'_'.date('Y_m_d').'.csv');
+        readfile($this -> getCSVLocation());
         die();
     }
 }
