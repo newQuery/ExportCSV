@@ -9,12 +9,10 @@ class CSV
     private $directory = "csv";
     private $name = "default_name";
     /**
-     * @param $db PDO Database connection
-     * @param $options Array containing key => value for ['table', 'database', 'name', 'directory']
+     * @param $PDOStatement Builded prepared PDO statement
      */
     public function __construct($PDOStatement)
     {
-
         $PDOStatement -> execute();
 
         $this -> columnCount = $PDOStatement -> columnCount();
@@ -24,7 +22,6 @@ class CSV
             $this -> setColumnNames($PDOStatement);
             $this -> results = $PDOStatement -> fetchAll(PDO::FETCH_OBJ);
             $this -> setContent();
-            $this -> createCSV();
         }
         else throw new Exception("Error with the PDOStatement", 1);
     }
@@ -42,24 +39,23 @@ class CSV
         {
           array_push($arrayNames,$PDOStatement->getColumnMeta($column_index)['name']);
         }
+        $this -> names = $arrayNames;
         $this -> content[] = $arrayNames;
     }
 
     private function setContent()
     {
-        #var_dump($this -> columnCount);
         foreach ($this -> results as $result)
         {
             $values = array();
             $a = 0;
-            while ($a <= $this -> count)
+            while ($a < count($this -> names))
             {
-                array_push($values, $result);
+                array_push($values, $result -> {$this->names[$a]});
                 $a++;
             }
+            $this -> content[] = $values;
         }
-        $this -> content[] = $values;
-        #var_dump($values);
     }
 
     private function getCSVLocation()
@@ -74,9 +70,9 @@ class CSV
         return $txt;
     }
 
-    private function createCSV()
+    public function create()
     {
-        $this -> file = fopen('csv/'. $this -> name.'_'.date('Y_m_d').'.csv', 'w') or die('peut pas ouvrir sa mere');
+        $this -> file = fopen($this -> getCSVLocation(), 'w') or die('peut pas ouvrir sa mere');
         foreach ($this -> content as $fields) {
             fputcsv($this -> file, $fields);
         }
@@ -86,6 +82,7 @@ class CSV
 
     public function download()
     {
+        $this -> create();
         $file_url = 'http://'.$_SERVER['HTTP_HOST'] .'/'. $this -> getCSVLocation();
         header('Content-Type: application/octet-stream');
         header("Content-Transfer-Encoding: Binary");
