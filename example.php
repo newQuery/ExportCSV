@@ -2,7 +2,7 @@
 require 'class.CSV.php';
 try
 {
-    $dbh = new PDO('mysql:host=localhost;dbname=myBB', 'root', '');
+    $dbh = new PDO('mysql:host=localhost;dbname=chatbox', 'root', '');
 }
 catch (PDOException $e)
 {
@@ -10,4 +10,4 @@ catch (PDOException $e)
     die();
 }
 
-$csv = new CSV($dbh, array('table' => 'mybb_usergroups','name' => 'export_mybb_templates', 'database' => 'myBB', 'directory' => 'csv'));
+$csv = new CSV($dbh, array('table' => 'mybb_usergroups','name' => 'export_mybb_usegroups', 'database' => 'chatbox', 'directory' => 'csv', 'download' => 1));

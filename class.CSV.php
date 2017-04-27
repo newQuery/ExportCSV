@@ -17,9 +17,12 @@ class CSV
         if(!isset($options['directory'])) $options['directory'] = '';
         $this -> options = $options;
         $this -> db = $db;
-        $this -> instantDownload();
+        if(isset($this -> options['download']) AND $this -> options['download'] == 1) $this -> instantDownload();
     }
 
+    /**
+     *
+     */
     public function instantDownload()
     {
         $this -> fetchResult();
@@ -40,6 +43,7 @@ class CSV
         }
         $results = $stmt -> fetchAll(PDO::FETCH_OBJ);
         $this -> results = $results;
+        return $this;
     }
 
     public function setContent()
@@ -75,6 +79,7 @@ class CSV
             }
             $this -> content[] = $values;
         }
+        return $this;
     }
 
     public function createCSV()
@@ -84,6 +89,7 @@ class CSV
             fputcsv($this -> file, $fields);
         }
         fclose($this -> file);
+        return $this;
     }
 
     public function download()
