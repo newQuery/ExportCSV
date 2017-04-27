@@ -1,9 +1,8 @@
 <?php
-// re Test
 require 'class.CSV.php';
 try
 {
-    $dbh = new PDO('mysql:host=localhost;dbname=chatbox', 'root', '');
+    $dbh = new PDO('mysql:host=localhost;dbname=mybb_forum', 'root', '');
 }
 catch (PDOException $e)
 {
@@ -11,4 +10,23 @@ catch (PDOException $e)
     die();
 }
 
-$csv = new CSV($dbh, array('table' => 'mybb_usergroups','name' => 'export_mybb_usegroups', 'database' => 'chatbox', 'directory' => 'csv', 'download' => 1));
+// You statement, select from the database you want to export
+$PDOStatement = $dbh -> prepare("SELECT * FROM mybb_usergroups");
+
+// You can also bind values
+$PDOStatement = $dbh -> prepare("SELECT * FROM mybb_usergroups WHERE type = :type");
+$PDOStatement -> bindValue(':type', '1');
+
+// Easiest & fastest way
+$csv = new CSV($PDOStatement);
+$csv -> download();
+
+// Adding a directory + name
+$csv = new CSV($PDOStatement);
+$csv -> set('name', 'export_myBB_usergroup') -> set('directory', 'csv');
+$csv -> download();
+
+// Creating the CSV but not download it
+$csv = new CSV($PDOStatement);
+$csv -> set('name', 'export_myBB_usergroup') -> set('directory', 'csv');
+$csv -> create();
