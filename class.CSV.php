@@ -30,7 +30,7 @@ class CSV
 
     public function fetchResult()
     {
-        $stmt = $this -> db -> query("SELECT * FROM {$this -> options['table']} ORDER BY id ASC");
+        $stmt = $this -> db -> prepare("SELECT * FROM ". $this -> options['table']);
         $stmt -> execute();
         $count = $stmt -> rowCount();
         if($stmt -> rowCount() < 1)
@@ -44,8 +44,10 @@ class CSV
 
     public function setContent()
     {
-        $sql = "SELECT Column_name FROM Information_schema.columns where Table_schema = '".$this -> options['database']."' AND Table_name like '".$this -> options['table']."'";
-        $columns = $this -> db -> query($sql);
+        $sql = "SELECT Column_name FROM Information_schema.columns where Table_schema = :database AND Table_name like :table";
+        $columns = $this -> db -> prepare($sql);
+        $columns -> bindValue(':database', $this -> options['database']);
+        $columns -> bindValue(':table', $this -> options['table']);
         $columns -> execute();
         if($columns -> rowCount() < 1)
         {
