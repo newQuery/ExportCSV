@@ -1,3 +1,5 @@
+(This was experimental, don't use this in production)
+
 # ExportCSV
 ### What is it ?
 A class that allows you to export all you database structure and datas into a CSV file
